@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?><sqlb_project><db path="Data Join.db" readonly="0" foreign_keys="1" case_sensitive_like="0" temp_store="0" wal_autocheckpoint="1000" synchronous="2"/><attached/><window><main_tabs open="structure browser pragmas query" current="3"/></window><tab_structure><column_width id="0" width="300"/><column_width id="1" width="0"/><column_width id="2" width="100"/><column_width id="3" width="1993"/><column_width id="4" width="0"/><expanded_item id="0" parent="1"/><expanded_item id="1" parent="1"/><expanded_item id="2" parent="1"/><expanded_item id="3" parent="1"/></tab_structure><tab_browse><table title="Accommodation" custom_title="0" dock_id="1" table="4,13:mainAccommodation"/><dock_state state="000000ff00000000fd00000001000000020000000000000000fc0100000001fb000000160064006f0063006b00420072006f00770073006500310100000000ffffffff0000011300ffffff000000000000000000000004000000040000000800000008fc00000000"/><default_encoding codec=""/><browse_table_settings/></tab_browse><tab_sql><sql name="SQL 1*">--Step 1: Create Base Population Table (Join + Cleanup)
+
+-- CREATE TABLE Join_Accommodation AS
+-- SELECT
+--     A.LA_Code,
+--     A.LA_Name,
+--     L.Region_name,
+--     A.Total,
+--     A.Detached,
+--     A.Semi_detached,
+--     A.Terraced,
+--     A.Flats
+-- FROM Accommodation A
+-- LEFT JOIN lasregionew2021lookup L ON TRIM(A.LA_Code) = TRIM(L.LA_Code);
+
+--Step 2: Update Null Regions
+
+-- UPDATE Join_Accommodation SET Region_name = 'North West' WHERE LA_Code IN ('E06000063', 'E06000064');
+-- UPDATE Join_Accommodation SET Region_name = 'Yorkshire and The Humber' WHERE LA_Code = 'E06000065';
+-- UPDATE Join_Accommodation SET Region_name = 'South West' WHERE LA_Code = 'E06000066';
+
+
+-- Step 3: Create Sales Summary Table 
+
+-- CREATE TABLE Sales_Summary AS
+-- SELECT 
+--     District,
+--     SUM(CASE WHEN Property_Type = 'D' THEN 1 ELSE 0 END) AS Sold_D,
+--     SUM(CASE WHEN Property_Type = 'S' THEN 1 ELSE 0 END) AS Sold_S,
+--     SUM(CASE WHEN Property_Type = 'T' THEN 1 ELSE 0 END) AS Sold_T,
+--     SUM(CASE WHEN Property_Type = 'F' THEN 1 ELSE 0 END) AS Sold_F
+-- FROM pp_december
+-- WHERE Record_Status = 'A'
+-- GROUP BY District;
+
+
+-- Step 4: Join All table 
+
+-- CREATE TABLE Join_All AS
+-- SELECT 
+--     B.Region_name,
+--     B.LA_Name,
+--     B.Detached AS Total_D,
+--     S.Sold_D,
+--     B.Semi_detached AS Total_S,
+--     S.Sold_S,
+--     B.Terraced AS Total_T,
+--     S.Sold_T,
+--     B.Flats AS Total_F,
+--     S.Sold_F
+-- FROM Join_Accommodation B
+-- LEFT JOIN Sales_Summary S ON UPPER(B.LA_Name) = UPPER(S.District);
+
+
+-- step 5: find the percent and Final output
+
+-- CREATE TABLE Final_output AS
+-- SELECT 
+--     Region_name,
+--     SUM(Sold_D) AS &quot;Sum of D&quot;,
+--     SUM(Sold_F) AS &quot;Sum of F&quot;,
+--     SUM(Sold_S) AS &quot;Sum of S&quot;,
+--     SUM(Sold_T) AS &quot;Sum of T&quot;,
+--     SUM(Total_D) AS &quot;Base D&quot;,
+--     SUM(Total_F) AS &quot;Base F&quot;,
+--     SUM(Total_S) AS &quot;Base S&quot;,
+--     SUM(Total_T) AS &quot;Base T&quot;,
+-- 	ROUND((SUM(Sold_D) * 100.0) / SUM(Total_D), 3) AS &quot;%_D&quot;,
+--     ROUND((SUM(Sold_F) * 100.0) / SUM(Total_F), 3) AS &quot;%_F&quot;,
+--     ROUND((SUM(Sold_S) * 100.0) / SUM(Total_S), 3) AS &quot;%_S&quot;,
+--     ROUND((SUM(Sold_T) * 100.0) / SUM(Total_T), 3) AS &quot;%_T&quot;
+-- FROM Join_All
+-- GROUP BY Region_name;
+</sql><current_tab id="0"/></tab_sql></sqlb_project>
